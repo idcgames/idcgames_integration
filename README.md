@@ -4,7 +4,9 @@ Guía y biblioteca de referencia para integrar **login de IDC Games, Launcher, t
 
 ## Inicio rápido
 
-Requisitos: Windows x64 y .NET SDK 8 o posterior.
+Para compilar o usar `dotnet run`: Windows x64, .NET SDK 8 o posterior y runtime .NET 8 x64 para ejecutar el ejemplo. Si ya tenéis Visual Studio con esos componentes, no hace falta instalarlos de nuevo.
+
+Para ejecutar el [ejemplo ya compilado](https://github.com/idcgames/idcgames_integration/releases/tag/v2.0.0), descargar y descomprimir el ZIP completo y ejecutar `LauncherDemo.exe --demo`: basta el runtime .NET 8 x64, sin SDK. Esta dependencia pertenece al ejemplo C#, no a la DLL nativa de IDC Games.
 
 ```powershell
 dotnet run --project examples/LauncherDemo -- --demo
