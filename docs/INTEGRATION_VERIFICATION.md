@@ -54,6 +54,15 @@ a live game's Auth mode merely to make a test pass.
   guide/resource retrieval test. Publisher and Admin catalogs remain separate.
 - Frontend Vite and legacy builds passed; no hand-edited compiled files.
 
+Follow-up1.11.0: full PHPUnit1314 tests/15484 assertions with1 Windows skip;
+new-game public/private generation and compatibility-copy migration passed
+through Quick Setup and publisher API. Native/payments backend examples passed
+8 and6 inert cases. A fresh MCP connection can read the entire publishing
+workflow and example resources without a key. The actual AdminLTE navigation
+regression was reproduced before the fix and passed after preserving the
+original treeview root across repeated iframe navigation. Existing public
+tokens were not regenerated; payment-only rotation was tested on disposable data.
+
 ## Remaining acceptance, never implied by the above
 
 Actual sandbox checkout through IDCPayment → Admin → game backend and durable

@@ -13,9 +13,13 @@ dotnet run --project examples/LauncherDemo -- --demo
 dotnet run --project examples/LauncherDemo -- --check-native
 ```
 
-El primer comando muestra eventos ficticios offline. El segundo carga la DLL y comprueba sus exports, sin conectar al Launcher. Para conectar un juego real, solicitar a IDC Games su ID, clave cliente del Launcher y configuración de servicios, y seguir [el ejemplo C#](docs/quickstart-csharp.md).
+El primer comando muestra eventos ficticios offline. El segundo carga la DLL y comprueba sus exports, sin conectar al Launcher. Para conectar un juego real, obtener idc_game_id y game_public_token con get_game del MCP Publisher o en Game Configuration, y consultar la guía de integración de servicios, y seguir [el ejemplo C#](docs/quickstart-csharp.md).
 
 ## Guías de integración
+
+- [Estudio y juego completos: alta, aprobación, assets, release y publicación](docs/PUBLISHING_E2E.md).
+- Ejemplos de backend en examples/backend: ejecutar cada archivo con Node y --self-test. Verifican sesión nativa y HMAC de pagos; no entregan inventario ni cobran.
+- Game Configuration muestra game_public_token y game_payment_secret. Los juegos anteriores conservan una copia del valor original; los nuevos generan valores distintos. El privado sólo va a Admin/backend y se regenera por acción humana; nunca se incluye en un EXE.
 
 Leer [el contrato completo con ejemplos](docs/GAME_INTEGRATION.md): login existente + S2S opcional, Shop F2P y sus IDs, apertura por Pipe, callbacks HMAC con clave privada, anuncios, sandbox y límites probados. Disponible también mediante get_integration_guide del MCP Publisher; no pedir pistas adicionales ni inventar endpoints.
 

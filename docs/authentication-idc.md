@@ -5,9 +5,9 @@ El login nativo existente no se sustituye. El EXE inicializa IDC, recibe UserDat
 ## Qué es cada valor
 
 - `id_game` / `gameId`: ID operativo IDC. Puede ser distinto del ID de fila del panel y del `game_id` interno de GamePanel.
-- `game_token`: identificador público del cliente; `gameSecret` es un alias histórico del protocolo. No autoriza al jugador ni firma pagos.
+- `game_public_token` (alias compatible `game_token`): identificador público del cliente; `gameSecret` es un alias histórico del protocolo. No autoriza al jugador ni firma pagos.
 - `UserData.extraParams.tokenUserGameId`: credencial temporal del jugador, nunca imprimirla ni enviarla en URL.
-- `payment_secret`: clave privada por juego para Admin → backend. No va al EXE ni sirve para login.
+- `game_payment_secret` (campo de API/archivo `payment_secret`): clave privada por juego para Admin → backend. No va al EXE ni sirve para login.
 - `X-Internal-Key`: credencial interna de IDC para verificación web; no entregarla a un estudio ni usarla como clave de pagos.
 
 ## Launcher → EXE
@@ -50,3 +50,9 @@ POST /api/web/verify-token es para credenciales de cuenta/web y usa X-Internal-K
 ## Shop, pagos y vídeo
 
 Leer `shop-and-ads.md` y `GAME_INTEGRATION.md`: contienen llamadas concretas de apertura de tienda F2P, Pipe para anuncios, callbacks, claves privadas, IDs, cantidades, idempotencia, sandbox y pruebas. El callback local PurchaseOk no acredita entrega ni pago. Ack sólo después de la confirmación duradera del backend.
+
+## Dónde obtener las dos claves
+
+Game Configuration muestra ambas, con la privada oculta y controles para verla/copiarla. Los juegos existentes copian su identificador original cifrado al campo de pagos sin cambiar el valor; los nuevos generan uno público y otro privado independientes. Regenerar sólo el privado y actualizar el backend, sin cambiar el público. El MCP prepare_game_payment_callback requiere estudio aprobado y commerce:write: exporta el valor existente a IDCGAMES_PAYMENT_SECRETS_DIR sin mostrarlo al agente. No confundir esto con una API key del MCP.
+
+La implementación de backend verificable está en examples/backend/verify-native-session.mjs (desde la raíz del repositorio); sus self-tests no llaman a Auth real. La guía completa de publicación se incluye en PUBLISHING_E2E.md.
