@@ -36,7 +36,7 @@ string requestId = await idc.OpenVideoAdAsync(sandbox: true);
 {"videoAd":true,"gameId":"123","sandbox":true,"requestId":"example-uuid","layout":{"mode":"fullscreen_monitor"}}
 ```
 
-Modos del wrapper: `fullscreen_monitor`, `fullscreen_game`, `windowed`. El Launcher también tiene opciones avanzadas de rectángulo; no se exponen en este ejemplo. Timeout de conexión al pipe: 3 segundos. Solo pedir un anuncio a la vez; el Launcher puede devolver `ALREADY_ACTIVE`.
+Modos del wrapper: `fullscreen_monitor`, `fullscreen_game`, `windowed`. El Launcher también tiene opciones avanzadas de rectángulo; no se exponen en este ejemplo. Timeout de conexión al pipe: 3 segundos. Solo pedir un anuncio a la vez; el Launcher puede devolver `BUSY (ALREADY_ACTIVE en documentación anterior)`.
 
 Callback JSON (`VideoAdResult`):
 
@@ -53,3 +53,7 @@ El Launcher gestiona la página `https://auth.idcgames.com/pages/video/{gameId}/
 ## Prueba real antes de publicar un juego
 
 Probar login correcto/rechazado, apertura/cancelación de tienda, compra sandbox, repetición del mismo pago, cierre/reinicio durante entrega, anuncio completado/saltado/sin inventario y ausencia del Launcher. Las pruebas automáticas incluidas son offline y no sustituyen esta aceptación con las credenciales y configuración del juego.
+
+## Contrato completo y ejemplo F2P 1599
+
+Consultar [GAME_INTEGRATION.md](GAME_INTEGRATION.md) para IDs de artículos, llamada nativa _OpenShop con artículo vacío, mensajes Pipe de anuncios, verificación HMAC privada del callback y las limitaciones reales del receptor GamePanel. El ejemplo diagnóstico CSharp_Test_1599 confirma automáticamente la recepción de compras y muestra datos crudos: no copiar ese auto-ACK ni esos logs a producción.

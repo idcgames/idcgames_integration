@@ -1,60 +1,52 @@
-# Autenticación de jugadores IDC Games
+# Login del Launcher y verificación opcional del backend
 
-Integración independiente de GamePanel. El cliente obtiene datos del Launcher; el backend del estudio debe validar la credencial y crear su propia sesión. No confiar en `userId`, nick, email ni en un callback local sin validación del servidor.
+El login nativo existente no se sustituye. El EXE inicializa IDC, recibe UserData por la DLL/Pipe y puede usar esa respuesta con su propio backend. GamePanel es una opción de backend, no un requisito del SDK.
 
-## Credenciales que solicitar
+## Qué es cada valor
 
-| Dato | Emisor / destino |
-|---|---|
-| IDC `id_game` | IDC Games; identifica el juego, no es secreto |
-| Clave cliente Launcher, llamada `gameSecret` en IPC histórico | IDC Games; compatibilidad del cliente nativo, recuperable de un juego distribuido |
-| Credencial del jugador | Launcher o login IDC; transmitir solo por HTTPS al backend propio, sin logs |
-| Canal de validación para el backend del estudio | Acordar con IDC Games; no facilitar al estudio la clave interna global de Auth |
+- `id_game` / `gameId`: ID operativo IDC. Puede ser distinto del ID de fila del panel y del `game_id` interno de GamePanel.
+- `game_token`: identificador público del cliente; `gameSecret` es un alias histórico del protocolo. No autoriza al jugador ni firma pagos.
+- `UserData.extraParams.tokenUserGameId`: credencial temporal del jugador, nunca imprimirla ni enviarla en URL.
+- `payment_secret`: clave privada por juego para Admin → backend. No va al EXE ni sirve para login.
+- `X-Internal-Key`: credencial interna de IDC para verificación web; no entregarla a un estudio ni usarla como clave de pagos.
 
-La clave cliente no autoriza operaciones administrativas ni demuestra la identidad de un jugador. No confundirla con claves de servicios internos.
+## Launcher → EXE
 
-## Flujo con Launcher
+Consultar `launcher-protocol.md` y `quickstart-csharp.md`. Mantener el Launcher abierto y logueado, inicializar la DLL con ID operativo/token público y PID, mantener callbacks vivos y llamar Poll en el hilo del juego. Start sin error no equivale a UserData válido. El campo tokenUserGameId es histórico: no deducir JWT ni MD5 por su nombre.
 
-1. El Launcher IDC inicia sesión y lanza el juego.
-2. El juego inicializa IDCLib2 y procesa `UserData` con `userId` y `tokenUserGameId`.
-3. El cliente envía esos datos a su backend por HTTPS.
-4. El backend valida mediante el contrato habilitado por IDC, comprueba el acceso al juego cuando corresponda y emite una sesión propia de corta duración.
+## EXE → backend → Auth (opcional)
 
-`tokenUserGameId` es un nombre histórico: distintos caminos/versiones del Launcher pueden entregar un token corto legado, un token de cuenta legado o un token Auth. No asumir que siempre es JWT. Coordinar con IDC el formato habilitado antes de elegir el verificador.
+El EXE transmite la credencial ya recibida a su backend por HTTPS. Para juegos habilitados con `client_session_protocol=opaque-v1`, el backend utiliza el contrato moderno de sesión emitida:
 
-## Comprobación histórica de token de juego
-
-Contrato actual de compatibilidad, comprobado en el código de Auth:
-
-```bash
-curl --request POST 'https://auth.idcgames.com/api/launcher/check-user-game-token' \
-  --header 'Content-Type: application/json' \
-  --data '{"userId":123,"gameId":456,"tokenUserGameId":"REDACTED","include_user_profile":1}'
+```http
+POST https://auth.idcgames.com/api/launcher/get-access-data
+Content-Type: application/json
 ```
 
-Respuesta de éxito: `{"status":"OK"}` (puede incluir perfil). Rechazo: `{"status":"KO",...}`. También puede responder HTTP 200 en un rechazo; comprobar siempre el JSON y fallar de forma cerrada. Los IDs son IDC, no IDs internos del juego.
-
-El token corto usa un mecanismo legado basado en MD5 y tiempo; **no debe presentarse como prueba moderna suficiente de identidad para un backend expuesto**. Solicitar a IDC una vía de validación de identidad apropiada antes de abrir servicios sensibles a estudios externos.
-
-## Validación de token Auth: infraestructura controlada por IDC
-
-El contrato interno existente es:
-
-```bash
-curl --request POST 'https://auth.idcgames.com/api/web/verify-token' \
-  --header 'X-Internal-Key: REPLACE_WITH_INTERNAL_AUTH_KEY' \
-  --header 'Content-Type: application/json' \
-  --data '{"token":"REDACTED_AUTH_TOKEN","useridc":"123"}'
+```json
+{"token":"CREDENTIAL_FROM_LIVE_PIPE","gameId":1614}
 ```
 
-Éxito HTTP 200 con `valid:true`, `useridc`, `nick`, `email`, `id_user`, `source`; un token inválido puede dar HTTP 200 con `valid:false`. Clave interna ausente/incorrecta: HTTP 401. Requerir `valid:true` y coincidencia con el jugador esperado. No fiarse de un JWT solo porque se puede decodificar.
+El backend fija su gameId en configuración, no acepta que el cliente seleccione otro juego. La URL se conserva por compatibilidad pero la implementación opaque-v1 valida el registro emitido, juego, padre, caducidad, revocación y acceso vigente. Los aliases históricos idctk/idcgameid se aceptan, pero no son necesarios. No fabricar hashes ni tratar la credencial como JWT web. No requiere una clave S2S global adicional: la credencial temporal limitada al juego es el bearer.
 
-**`X-Internal-Key` es una clave global interna: no incluirla en el cliente, repositorios ni entregarla al estudio externo.** Este ejemplo documenta el contrato de IDC; no implica que el estudio tenga acceso autorizado. IDC debe acordar un servicio de validación controlado o el mecanismo específico de acceso. No hay en esta entrega un endpoint nuevo ni una clave por estudio ya desplegados.
+Exigir HTTP correcto y todos los campos de éxito: result0, can_playtrue, game_id esperado, user.userid positivo, expires_at futuro (segundos Unix) y catalog_syncedtrue antes de desbloquear contenido del catálogo. Crear sesión propia vinculada a (game_id,user.userid), ignorando IDs/nicks/emails propuestos por el cliente. No usar usercrc como firma.
 
-Esta comprobación valida identidad de cuenta, **no comprueba licencia/pertenencia al juego ni devuelve `game_id`**. Esa autorización debe resolverse separadamente.
+Los enteros de dlcs son IDs operativos autorizados, no panel_id ni SKU ni catálogo completo. [] no desbloquea nada. Developer de base no regala DLC. Revalidar acciones protegidas y revocaciones; TTL máximo30min sin superar el padre/derecho. Renovar con el ciclo InitLib soportado, nunca alargar autorización offline.
 
-`/api/launcher/login-game-token` valida una aplicación mediante `gameId`/`gameSecret`; sin token de cuenta puede emitir un token de aplicación. No es un login de jugador por usuario/contraseña ni puede usarse ese token de aplicación como identidad de un jugador.
+Errores401 para credencial no emitida/caducada/revocada/otro juego;403 para mantenimiento/baneo/acceso denegado;503 para dependencia no disponible. Revisar error_code y mensaje, rechazar timeout/JSON incompleto sin fallback a permisos antiguos. No incluir tokens en trazas.
 
-## Backend propio
+La aprobación/sincronización de desarrollo desde Admin registra primero el juego en Auth. Confirmar protocolo y entrega antes del test. Un probe negativo401 no demuestra login real; las fixtures no sustituyen probar el EXE con Launcher.
 
-Definir un endpoint propio para recibir la credencial, limitar intentos, validar con el proveedor y emitir sesión. Ese endpoint pertenece al estudio; esta guía no inventa una ruta pública de IDC. Mantener los tokens fuera de URLs, métricas, trazas y archivos. No vincular cuentas automáticamente por email. Una identidad autenticada no implica autorización para todas las compras, juegos o recursos.
+## Si se utiliza GamePanel
+
+El ejemplo CSharp_Test_1599 obtiene UserData y después llama POST /api/v1/auth/third-party/login en GamePanel con platform idc, token, user_id, game_id interno de GamePanel, idc_game_id operativo y la configuración de integración de esa instalación. Ese login devuelve una sesión propia de GamePanel; /auth/validate comprueba su bearer.
+
+El adaptador histórico prueba check-user-game-token con userId/gameId/tokenUserGameId y después verify-token para el formato web. Un check OK permite verificar el login, pero no devuelve la proyección completa de caducidad/DLC. Para opaque-v1, un fallo nativo no debe convertirse en intento de JWT web ni aceptación local. Contrastar la versión instalada del adaptador antes de integrar; no confundir su ID interno con el operativo.
+
+## Compatibilidad web histórica
+
+POST /api/web/verify-token es para credenciales de cuenta/web y usa X-Internal-Key interno. No es el verificador de tokenUserGameId opaco. No solicitar una clave global para solucionar su rechazo. El ejemplo anterior de MD5/minuto pertenece al contrato legacy de juegos sin opaque-v1 y no debe implementarse como mecanismo moderno de identidad.
+
+## Shop, pagos y vídeo
+
+Leer `shop-and-ads.md` y `GAME_INTEGRATION.md`: contienen llamadas concretas de apertura de tienda F2P, Pipe para anuncios, callbacks, claves privadas, IDs, cantidades, idempotencia, sandbox y pruebas. El callback local PurchaseOk no acredita entrega ni pago. Ack sólo después de la confirmación duradera del backend.

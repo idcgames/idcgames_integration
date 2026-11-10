@@ -17,6 +17,8 @@ El primer comando muestra eventos ficticios offline. El segundo carga la DLL y c
 
 ## Guías de integración
 
+Leer [el contrato completo con ejemplos](docs/GAME_INTEGRATION.md): login existente + S2S opcional, Shop F2P y sus IDs, apertura por Pipe, callbacks HMAC con clave privada, anuncios, sandbox y límites probados. Disponible también mediante get_integration_guide del MCP Publisher; no pedir pistas adicionales ni inventar endpoints.
+
 - [Login e identidad IDC Games](docs/authentication-idc.md): flujo, credenciales, peticiones y validación en backend.
 - [Ejemplo C# paso a paso](docs/quickstart-csharp.md): configuración, polling y comandos de consola.
 - [Tienda, pagos y vídeo Ads](docs/shop-and-ads.md): checkout, confirmación, sandbox y estados de anuncios.
