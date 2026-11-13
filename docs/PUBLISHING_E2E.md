@@ -1,4 +1,4 @@
-# Publisher E2E: studio, local integration, release and game page
+# Publisher E2E: publisher, local integration, release and game page
 
 Public guide: https://admin.idcgames.com/publisher/get-started
 
@@ -8,34 +8,34 @@ callbacks, Launcher/web checkout and video ads, first call MCP
 It is also available as resource `idcgames://publisher/integration` and packaged
 `dist/INTEGRATION.md`. Do not infer these runtime contracts from publishing tools.
 
-This is the canonical publisher workflow. A studio approval, developer access,
+This is the canonical publisher workflow. A publisher approval, developer access,
 a build upload, a public page approval and a playable phase are separate decisions.
 Do not skip the real Launcher test or describe a queued synchronization as delivered.
 
-## 1. Create and approve the studio
+## 1. Create and approve the publisher
 
 Connect the publisher MCP from source or install its downloadable `.tgz` (Node
-20.19+). Start without a saved key for a new studio. Use
+20.19+). Start without a saved key for a new publisher. Use
 `request_company_signup`; ask the owner for the OTP received in their own email
 and explicit acceptance of the publisher terms. Call `confirm_company_signup`.
 The MCP saves its scoped publisher credential privately. Never ask for passwords
 or paste API keys, device codes or player tokens into a conversation.
 
 **Registration is not IDC approval.** `confirm_company_signup` returns
-`status:registered`, not an approved studio. Read `get_company_profile.onboarding`
+`status:registered`, not an approved publisher. Read `get_company_profile.onboarding`
 immediately; never tell the owner to wait without checking what is missing.
 
-| Studio status / response | Required next action | Should the AI wait? |
+| Publisher status / response | Required next action | Should the AI wait? |
 | --- | --- | --- |
 | `pending`, `missing_fields` nonempty | Ask the owner for exactly those fields, using `required_inputs`; call `update_company_profile`. | **No. Waiting cannot complete missing data.** |
 | `pending`, complete profile | Existing registrations may need `submit_company_review`, or save the complete profile again. | **No. It has not been submitted.** |
 | `pending_review`, complete profile | Poll `get_company_profile` after 60 seconds. Auto review normally runs every ten minutes when enabled; otherwise IDC must review manually. | Yes, with a clear explanation to the owner. |
-| `approved` | `onboarding.ready_for_uploads=true`; studio onboarding is complete. Game approval remains separate. | No. Continue preparing games. |
+| `approved` | `onboarding.ready_for_uploads=true`; publisher onboarding is complete. Game approval remains separate. | No. Continue preparing games. |
 | `rejected` | Read the feedback, ask the owner for corrections, and save the corrected profile. | **No. It requires corrections.** |
 
 Required legal inputs are **`legal_name`** (owner-supplied legal entity name,
-1–191 characters) and **`country`** (the studio's legal country, two ISO alpha-2
-letters, e.g. `ES`). The public studio name and the owner's account country do
+1–191 characters) and **`country`** (the publisher's legal country, two ISO alpha-2
+letters, e.g. `ES`). The public publisher name and the owner's account country do
 not prove those values. Ask if unknown; do not invent legal or billing data.
 Contact name, phone, website and tax ID are additional profile fields. A missing
 contact address is flagged to IDC separately; the API does not change the owner
@@ -44,37 +44,43 @@ email or grant the agent authority over account credentials.
 Saving a complete pending/rejected profile through the API now **automatically
 submits it**, matching the panel. It does not approve it. The older explicit
 `submit_company_review` remains safe to repeat and never demotes an approved
-studio. Read `missing_fields`, `required_inputs`, `next_action`, `should_wait`,
+publisher. Read `missing_fields`, `required_inputs`, `next_action`, `should_wait`,
 `poll_after_seconds` and `automatic_review.enabled` in every response.
 If review is still pending after 20 minutes, stop the polling loop, tell the
 owner it is delayed and ask IDC to check the scheduler/manual queue. Never
-re-register the studio or repeatedly submit it to make progress.
+re-register the publisher or repeatedly submit it to make progress.
 
-Example: ask “What is your studio's legal entity name and legal country?”;
+Example: ask “What is your publisher's legal entity name and legal country?”;
 call `update_company_profile({legal_name:"<owner answer>",country:"<ISO code>"})`;
 expect `pending_review` and `should_wait:true`; poll until `approved`. Only then
-say “Your studio is approved.” Draft games can be prepared earlier; uploads,
+say “Your publisher is approved.” Draft games can be prepared earlier; uploads,
 sales and publication still require approval and permissions. See
 [the signup contract](https://github.com/victorlamas/idcgames_panel_ia/blob/main/docs/mcp/PUBLISHER_OTP_FLOW.md).
 
-In the panel, studio-wide credentials are managed under **Studio → Studio
-configuration → Studio MCP Keys**. Game-restricted keys have their own screen.
-Each key belongs to one studio; choose all studio games for a studio-wide agent,
-or restrict it to one game for a project-specific agent. **Studio MCP Keys** lists
-only credentials for the whole studio. For separate game credentials, open
+In the panel, publisher-wide credentials are managed under **Publisher → Publisher
+configuration → Publisher MCP Keys**. Game-restricted keys have their own screen.
+Each key belongs to one publisher; choose all publisher games for a publisher-wide agent,
+or restrict it to one game for a project-specific agent. **Publisher MCP Keys** lists
+only credentials for the whole publisher. For separate game credentials, open
 **Game Configuration → Game MCP keys**; the selected game is fixed on issuance
 and its screen lists only that game's keys. These are different secrets and
 independent MCP configurations, using the same publisher package and PANEL_URL
-but a different PANEL_API_KEY for each agent. Studio keys cover future games too;
-a game key cannot create another game or edit the studio profile. Scopes still limit its
-actions. IDC staff select **Studios → All studios → [studio] → Studio
-configuration → Studio MCP Keys**. The staff studio page also links its
+but a different PANEL_API_KEY for each agent. Publisher keys cover future games too;
+a game key cannot create another game or edit the publisher profile. Scopes still limit its
+actions. IDC staff select **Publishers → All publishers → [publisher] → Publisher
+configuration → Publisher MCP Keys**. The staff publisher page also links its
 games, members, review, billing, invoices and balance, subject to permissions.
-Admin MCP credentials remain separate from studio publisher credentials.
+Admin MCP credentials remain separate from Publisher MCP credentials.
 
 ## 2. Prepare the game and its complete page
 
 Discover IDs with `get_game_catalogs` and creator names with `search_creators`.
+
+The Publisher is the Admin account that publishes the game. Credit the same
+public name as Developer if the Publisher also made it, or credit the actual
+developer separately. Use the Admin guide for the current credit and publication
+workflow: https://admin.idcgames.com/publisher/get-started.
+
 Create the game using `create_game`; read it back with `get_game`. Use its
 `idc_game_id` and `game_public_token` (compatible alias `game_token`) for client configuration. The token is
 an application identifier, not player authentication or an Admin credential.
@@ -127,7 +133,7 @@ approval or synchronization timestamp does not make a game a recent release.
 
 ## 3. Register Development in Auth and assign a test player
 
-Call `sync_development_game` with the studio's authorized publisher key
+Call `sync_development_game` with the publisher's authorized publisher key
 (`games:write` and `releases:publish`). It chooses the existing `developing`
 phase and sends the game only to operational Auth. Poll
 `get_game_review.development_registration` until `state` is `sent`; an outbox
@@ -138,7 +144,7 @@ The tester must create a normal IDC Games **player account**, then a person with
 access to this game's configuration and `game_manage` assigns that account under
 **Game Configuration → Developer access** (`/game/userdeveloper?game=<panel-id>`).
 Search by nickname, select the actual account and assign its stable `id_user`.
-The studio's panel owner account and its player account are separate identities.
+The publisher's panel owner account and its player account are separate identities.
 Company approval, a creator credit named “developer”, and `user_developer` are
 not equivalent. Do not assign global developer access for a game's tester.
 
@@ -217,7 +223,7 @@ See [review policy and restoration steps](https://github.com/victorlamas/idcgame
 
 ## AI completion report
 
-Report the studio/game IDs, selected phase, release code/version and verified
+Report the publisher/game IDs, selected phase, release code/version and verified
 hash, real Launcher/Auth result, DLC test scope, review state, each delivery state
 and actual public URL. Explicitly distinguish local fixtures, real player login,
 CDN delivery and an actual purchase. Keep secrets and personal session data out.
@@ -294,7 +300,7 @@ Catalog flags are not a player's entitlement. Auth alone determines `can_play`.
 ## Demos are separate games
 
 **Demo is not a phase.** Call `create_game(demo=true, id_commercial_game=...)`
-with the full game's IDC ID owned by the same studio. The demo has its own game
+with the full game's IDC ID owned by the same publisher. The demo has its own game
 ID, App/releases, keys and Store under `/demo/<full-game-slug>/` (with the normal
 language prefix). Only one demo per full game is supported. Discover and select
 its real phase separately, such as Development, Closed Alpha, Closed Beta or

@@ -9,7 +9,7 @@ for actual observed outcomes and the remaining acceptance work.
 
 ## 0. Start here: choose the work and follow its order
 
-Call `get_integration_guide({topic:"publishing"})` for the complete studio → game
+Call `get_integration_guide({topic:"publishing"})` for the complete publisher → game
 page → development → tested build → release → review → delivery workflow.
 `studio` focuses on OTP, profile, approval and keys; `native_login`, `shop`,
 `payments`, `ads` and `checklist` focus on implementation. `all` returns both
@@ -17,7 +17,7 @@ full guides. No API key is needed to read them.
 
 | Your case | Next action |
 |---|---|
-| No studio | Owner email/OTP/terms → legal profile → submit → wait only in pending_review |
+| No publisher | Owner email/OTP/terms → legal profile → submit → wait only in pending_review |
 | No game | Discover catalogs → create_game → get_game; distinguish Panel and IDC IDs |
 | Working Launcher login | Keep it unchanged; optional backend validation is a separate step |
 | F2P articles | Shop catalog → backend ID mapping → export/install payment key → callback → sandbox acceptance |
@@ -56,10 +56,10 @@ durable per-transaction grant/refund policy described below.
 | Panel `game_id` | `get_game`; selects publisher tools and Admin records | Yes; identification only |
 | IDC `id_game` / `id_idcgame` | Game's operational identifier in Auth/Launcher; do not substitute the Panel ID | Yes |
 | `game_public_token` (compatible `game_token`) | `get_game`; public Launcher identifier, historical `gameSecret` wire alias | Yes; never authorizes payment/player by itself |
-| Publisher MCP key | Studio Configuration or Game Configuration → MCP keys; scoped `X-Agent-Key` for Admin | No |
+| Publisher MCP key | Publisher Configuration or Game Configuration → MCP keys; scoped `X-Agent-Key` for Admin | No |
 | Native `tokenUserGameId` | Live Launcher UserData; short-lived bearer credential for the player/game | Runtime only; never logs, URLs, repository or support messages |
 | `game_payment_secret` (API/file `payment_secret`) | Game Configuration; MCP exports it only to a protected backend file | **No** |
-| Auth `X-Internal-Key` | Internal IDC web-account verification; not a publisher credential | **No; never delegate to a studio** |
+| Auth `X-Internal-Key` | Internal IDC web-account verification; not a publisher credential | **No; never delegate to a publisher** |
 | GamePanel internal game ID | Receiver configuration, if GamePanel is used | Separate from both IDC and Panel IDs |
 
 **Existing games:** copy the original public value encrypted into the payment
@@ -75,7 +75,7 @@ masked `game_payment_secret`, with reveal/copy controls. A human with
 they will update the backend. The public token remains unchanged. General
 game-read responses never reveal the private key.
 
-Payment keys do not authenticate users. A studio-scoped MCP key manages its games; a game-scoped
+Payment keys do not authenticate users. A publisher-scoped MCP key manages its games; a game-scoped
 one manages that game only. Neither can administer Auth or issue MCP keys.
 
 ## 2. Existing EXE login and optional backend verification
@@ -94,7 +94,7 @@ StdCall, native bool one byte, JSON callback UTF-16LE, length in bytes. Copy
 callback bytes before returning, retain delegates, poll on the game thread,
 dispose on exit. A C# .NET8 wrapper is an example, not a requirement for C++ games.
 
-1. Approve the studio, create the game and DLC catalog, then
+1. Approve the publisher, create the game and DLC catalog, then
    `sync_development_game`. Wait for its Auth delivery acknowledgement before
    testing login. A human assigns the tester's separate IDC player account via
    Game Configuration → Developer access (`user_developer`, numeric `id_user`).
@@ -206,7 +206,7 @@ contents into a chat. Back it up as a backend credential.
 1. `get_game_payment_callback` reports signing mode/fingerprint only.
 2. `prepare_game_payment_callback` exports Admin's existing key into that
    directory, bound to Panel URL and Panel game ID. It requires an approved
-   studio and `commerce:write`. Its result contains only path, signing mode
+   publisher and `commerce:write`. Its result contains only path, signing mode
    and SHA256 fingerprint. It never prints, regenerates or activates the key.
    New games already have separate keys; old games keep their copied value
    until a human regenerates the payment secret.
@@ -224,11 +224,11 @@ contents into a chat. Back it up as a backend credential.
 
 For a direct HTTP API integration the configuration route is
 `PUT /api/agent/games/{panel_game_id}/payment-callback`, publisher profile,
-`commerce:write`, approved studio, JSON `payment_secret` (64 lowercase hex for a
+`commerce:write`, approved publisher, JSON `payment_secret` (64 lowercase hex for a
 new private key; existing compatibility copies keep their original value),
 `callback_url`, `backend_ready:true`. GET uses `commerce:read` and returns no key.
 The protected export is `POST /api/agent/games/{panel_game_id}/payment-callback/credential`,
-also `commerce:write` and approved studio, with a private/no-store response.
+also `commerce:write` and approved publisher, with a private/no-store response.
 It returns the secret to the authorized integration client, which must save it
 directly into protected backend storage and omit it from logs and AI tool text.
 The MCP does that automatically; the AI sees only file path, mode and fingerprint.

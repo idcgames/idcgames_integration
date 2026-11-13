@@ -17,7 +17,7 @@ El primer comando muestra eventos ficticios offline. El segundo carga la DLL y c
 
 ## Guías de integración
 
-- [Estudio y juego completos: alta, aprobación, assets, release y publicación](docs/PUBLISHING_E2E.md).
+- [Publisher y juego completos: alta, aprobación, assets, release y publicación](docs/PUBLISHING_E2E.md).
 - Ejemplos de backend en examples/backend: ejecutar cada archivo con Node y --self-test. Verifican sesión nativa y HMAC de pagos; no entregan inventario ni cobran.
 - Game Configuration muestra game_public_token y game_payment_secret. Los juegos anteriores conservan una copia del valor original; los nuevos generan valores distintos. El privado sólo va a Admin/backend y se regenera por acción humana; nunca se incluye en un EXE.
 
