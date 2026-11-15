@@ -9,6 +9,7 @@ Windows x64. La DLL implementa IPC local; no es una frontera de seguridad frente
 | `_InitIDCLib` | wchar_t* gameId, wchar_t* clientKey, uint32 processId, notify, log, bool useQueue |
 | `_PullMessage` | ninguno |
 | `_OpenShop` | wchar_t* transactionId, wchar_t* extra, int userLevel, bool sandbox, wchar_t* article |
+| `_OpenShopWithLanguage` | Los mismos argumentos y `wchar_t* language` al final. Launcher 7.1.35 o posterior |
 | `_ClosePurchase` | wchar_t* transactionId, wchar_t* idcpaymentId |
 | `_EndIDCLib` | ninguno |
 

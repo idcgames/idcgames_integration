@@ -6,6 +6,8 @@ Requiere login local recibido y configuración del juego en IDC Games. La biblio
 
 ```csharp
 idc.OpenShop(Guid.NewGuid().ToString(), article: "", sandbox: true);
+// Launcher 7.1.35 o posterior. Usa un idioma habilitado para el juego.
+idc.OpenShopWithLanguage(Guid.NewGuid().ToString(), "es", sandbox: true);
 ```
 
 `article` vacío abre la tienda; para abrir un artículo usar el identificador configurado con IDC. `extra` y `userLevel` son metadatos del cliente, no autorización. Los parámetros nativos tienen límites; el wrapper rechaza cadenas demasiado largas, comillas, barras invertidas y controles porque la DLL histórica construye JSON en buffers fijos.

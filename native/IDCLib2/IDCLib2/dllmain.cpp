@@ -152,25 +152,49 @@ _declspec(dllexport) int _stdcall _PullMessage() {
 	return 0;
 }
 
-_declspec(dllexport) int __stdcall _OpenShop(const wchar_t* transactionId, const wchar_t* extra, int userLevel, bool sandbox, const wchar_t* article)  {
+static bool ShopJsonString(const wchar_t* value, int maxBytes, std::string& json) {
+	if (!value) value = L"";
+	char utf8[256];
+	if (!WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1, utf8, maxBytes, NULL, NULL))
+		return false;
+	json += '"';
+	for (const char* p = utf8; *p; ++p) {
+		if (static_cast<unsigned char>(*p) < 0x20) return false;
+		if (*p == '"' || *p == '\\') json += '\\';
+		json += *p;
+	}
+	json += '"';
+	return true;
+}
+
+static int OpenShop(const wchar_t* transactionId, const wchar_t* extra, int userLevel,
+	bool sandbox, const wchar_t* article, const wchar_t* language) {
 	CGlobal* pGlobal = CGlobal::Instance();
-	if (!pGlobal->m_notifier->IsRunning()) {
-		//CGlobal::Log("Notifier not running.");
-		return FALSE;
+	if (!pGlobal || !pGlobal->m_notifier || !pGlobal->m_notifier->IsRunning()) return FALSE;
+	std::string json = "{\"transactionID\":";
+	if (!ShopJsonString(transactionId, 128, json)) return -1;
+	json += ",\"extra\":";
+	if (!ShopJsonString(extra, 256, json)) return -1;
+	json += ",\"userLevel\":" + std::to_string(userLevel);
+	json += sandbox ? ",\"sandbox\":true" : ",\"sandbox\":false";
+	json += ",\"article\":";
+	if (!ShopJsonString(article, 256, json)) return -1;
+	if (language && *language) {
+		json += ",\"language\":";
+		if (!ShopJsonString(language, 33, json)) return -1;
 	}
-	char _transactionid[128];
-	WideCharToMultiByte(CP_UTF8, 0, transactionId, -1, _transactionid, 128, NULL, NULL);
-	char _extra[256];
-	WideCharToMultiByte(CP_UTF8, 0, extra, -1, _extra, 256, NULL, NULL);
-	char _article[256];
-	WideCharToMultiByte(CP_UTF8, 0, article, -1, _article, 256, NULL, NULL);
-	char  buff[512];
-	sprintf_s(buff, 512, "{\"transactionID\":\"%s\", \"extra\":\"%s\", \"userLevel\":%d , \"sandbox\":%s, \"article\":\"%s\" }", _transactionid, _extra, userLevel, sandbox ? "true" : "false", _article);
-	if (pGlobal->m_notifier->SendSecure(Command::PurchaseInit, buff)) {
-		//CGlobal::Log("Opening Shop.");
-		return 0;
-	}
-	return -1;
+	json += '}';
+	return pGlobal->m_notifier->SendSecure(Command::PurchaseInit, json.c_str()) ? 0 : -1;
+}
+
+_declspec(dllexport) int __stdcall _OpenShop(const wchar_t* transactionId, const wchar_t* extra,
+	int userLevel, bool sandbox, const wchar_t* article) {
+	return OpenShop(transactionId, extra, userLevel, sandbox, article, nullptr);
+}
+
+_declspec(dllexport) int __stdcall _OpenShopWithLanguage(const wchar_t* transactionId, const wchar_t* extra,
+	int userLevel, bool sandbox, const wchar_t* article, const wchar_t* language) {
+	return OpenShop(transactionId, extra, userLevel, sandbox, article, language);
 }
 
 _declspec(dllexport) int _stdcall _ClosePurchase(const wchar_t* transactionId, const wchar_t* idcPaymentId) {

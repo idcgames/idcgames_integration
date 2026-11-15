@@ -6,7 +6,7 @@ Console.OutputEncoding=Encoding.UTF8;
 if(args.Contains("--check-native"))
 {
     var handle=NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory,"IDCLib2.dll"));
-    try { foreach(var name in new[]{"_InitIDCLib","_PullMessage","_OpenShop","_ClosePurchase","_EndIDCLib"}) { NativeLibrary.GetExport(handle,name); Console.WriteLine($"OK {name}"); } }
+    try { foreach(var name in new[]{"_InitIDCLib","_PullMessage","_OpenShop","_OpenShopWithLanguage","_ClosePurchase","_EndIDCLib"}) { NativeLibrary.GetExport(handle,name); Console.WriteLine($"OK {name}"); } }
     finally { NativeLibrary.Free(handle); }
     return;
 }
@@ -40,7 +40,7 @@ client.Notification+=n=>
 try { client.Start(); }
 catch(Exception e) when(e is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException or InvalidOperationException)
 { Console.Error.WriteLine($"Cannot initialize: {e.Message}"); Environment.ExitCode=1; return; }
-Console.WriteLine("Waiting for UserData. Commands: shop, shop-live, ad, ad-live, ack <tx> <payment>, quit. shop/ad default to sandbox previews.");
+Console.WriteLine("Waiting for UserData. Commands: shop, shop-lang <language>, shop-live, ad, ad-live, ack <tx> <payment>, quit. shop/ad default to sandbox previews.");
 Task<string?> input=Task.Run(Console.ReadLine);
 while(true)
 {
@@ -53,6 +53,7 @@ while(true)
         string[] parts=line.Split(' ',StringSplitOptions.RemoveEmptyEntries);
         switch(parts.FirstOrDefault()?.ToLowerInvariant())
         {
+            case "shop-lang": client.OpenShopWithLanguage(Guid.NewGuid().ToString(), parts.Length > 1 ? parts[1] : "es", sandbox: true); break;
             case "shop": case "shop-live": client.OpenShop(Guid.NewGuid().ToString(),sandbox:parts[0]=="shop"); break;
             case "ad": case "ad-live": await client.OpenVideoAdAsync(sandbox:parts[0]=="ad"); Console.WriteLine("Request sent. Wait for the terminal callback before requesting another ad."); break;
             case "ack" when parts.Length==3: client.AcknowledgePurchase(parts[1],parts[2]); Console.WriteLine("Acknowledgement sent. This does not replace backend receipt validation."); break;

@@ -69,6 +69,20 @@ public sealed class LauncherClient : IDisposable
         if(userLevel<0) throw new ArgumentOutOfRangeException(nameof(userLevel));
         lock(gate) { RequireAuthenticated(); CheckResult(native.OpenShop(transactionId,extra,userLevel,sandbox,article),"open shop"); }
     }
+    public void OpenShopWithLanguage(string transactionId, string language, string article = "", bool sandbox = true, int userLevel = 0, string extra = "")
+    {
+        CheckNativeString(transactionId,64,false); CheckNativeString(article,96,true); CheckNativeString(extra,128,true);
+        CheckNativeString(language,32,true);
+        if (userLevel < 0) throw new ArgumentOutOfRangeException(nameof(userLevel));
+        lock (gate)
+        {
+            RequireAuthenticated();
+            var result = string.IsNullOrWhiteSpace(language)
+                ? native.OpenShop(transactionId, extra, userLevel, sandbox, article)
+                : native.OpenShopWithLanguage(transactionId, extra, userLevel, sandbox, article, language);
+            CheckResult(result, "open shop");
+        }
+    }
     public void AcknowledgePurchase(string transactionId,string paymentId)
     {
         CheckNativeString(transactionId,64,false); CheckNativeString(paymentId,64,false);

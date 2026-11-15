@@ -5,3 +5,4 @@ EXPORTS
 	_OpenShop						@3
 	_ClosePurchase					@4
 	_PullMessage					@5
+	_OpenShopWithLanguage			@8

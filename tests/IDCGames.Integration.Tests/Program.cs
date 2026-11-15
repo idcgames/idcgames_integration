@@ -18,7 +18,7 @@ Test("purchase field names and completeness",()=>{Check(Decode(LauncherCommand.P
 Test("video terminal states and compatibility",()=>{foreach(var status in new[]{"STARTED","OK","SKIPPED","NO_FILL","ERROR"}){var n=LauncherProtocol.Decode((uint)LauncherCommand.VideoAdResult,Encoding.UTF8.GetBytes($"VIDEO_AD|{status}|123|session|"));Check(n.VideoAd!.IsTerminal==(status!="STARTED"));}Reject<FormatException>(()=>Decode(LauncherCommand.VideoAdResult,"""{"status":"SUCCESS"}"""));});
 Test("client input validation",()=>{foreach(var id in new[]{"0","-1"," 1","+1","1\""})Reject<ArgumentException>(()=>new LauncherClient(id,"example"));Reject<ArgumentException>(()=>new LauncherClient("1","bad\"key"));});
 Test("init is not authentication; handlers outside native callback",()=>{
- var api=new Fake();using var c=new LauncherClient("123","example",api);c.Start();Check(!c.IsAuthenticated);Reject<InvalidOperationException>(()=>c.OpenShop("tx"));int events=0;c.Notification+=n=>{Check(!api.InCallback);events++;};api.Send(LauncherCommand.UserData,Login);Check(events==0);c.Poll();Check(c.IsAuthenticated && events==1);c.OpenShop("tx");Check(api.Shops==1);});
+ var api=new Fake();using var c=new LauncherClient("123","example",api);c.Start();Check(!c.IsAuthenticated);Reject<InvalidOperationException>(()=>c.OpenShop("tx"));int events=0;c.Notification+=n=>{Check(!api.InCallback);events++;};api.Send(LauncherCommand.UserData,Login);Check(events==0);c.Poll();Check(c.IsAuthenticated && events==1);c.OpenShop("tx");Check(api.Shops==1);c.OpenShopWithLanguage("tx","es");Check(api.Shops==2 && api.LastLanguage=="es");});
 Test("one process owner and idempotent shutdown",()=>{var api=new Fake();var c=new LauncherClient("123","example",api);c.Start();using var other=new LauncherClient("123","example",new Fake());Reject<InvalidOperationException>(other.Start);c.Dispose();c.Dispose();Check(api.Ends==1);other.Start();});
 Test("failed initialization releases process owner",()=>{using var bad=new LauncherClient("123","example",new Fake{InitResult=1});Reject<InvalidOperationException>(bad.Start);using var good=new LauncherClient("123","example",new Fake());good.Start();});
 Test("malformed callback cannot escape to native code",()=>{var api=new Fake();using var c=new LauncherClient("123","example",api);c.Start();api.Send(LauncherCommand.UserData,"bad json");c.Poll();Check(!c.IsAuthenticated);});
@@ -31,6 +31,8 @@ sealed class Fake:INativeApi {
  NotifyCallback? notify;public int InitResult,Shops,Acks,Ends;public bool InCallback;
  public int Init(string g,string k,uint p,NotifyCallback n,LogCallback l){notify=n;return InitResult;}
  public int Poll()=>0;
+ public int OpenShopWithLanguage(string t,string e,int l,bool s,string a,string language){LastLanguage=language;Shops++;return 0;}
+ public string? LastLanguage {get;private set;}
  public int OpenShop(string t,string e,int l,bool s,string a){Shops++;return 0;}
  public int ClosePurchase(string t,string p){Acks++;return 0;}
  public int End(){Ends++;return 0;}

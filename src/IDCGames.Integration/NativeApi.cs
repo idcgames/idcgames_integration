@@ -13,6 +13,7 @@ internal interface INativeApi
     int Init(string gameId, string clientKey, uint processId, NotifyCallback notify, LogCallback log);
     int Poll();
     int OpenShop(string transactionId, string extra, int userLevel, bool sandbox, string article);
+    int OpenShopWithLanguage(string transactionId, string extra, int userLevel, bool sandbox, string article, string language);
     int ClosePurchase(string transactionId, string paymentId);
     int End();
 }
@@ -35,6 +36,8 @@ internal sealed class NativeApi : INativeApi
     public int End() => EndNative();
     public int OpenShop(string transactionId, string extra, int userLevel, bool sandbox, string article)
         => OpenNative(transactionId, extra, userLevel, sandbox, article);
+    public int OpenShopWithLanguage(string transactionId, string extra, int userLevel, bool sandbox, string article, string language)
+        => OpenLanguageNative(transactionId, extra, userLevel, sandbox, article, language);
     public int ClosePurchase(string transactionId, string paymentId) => CloseNative(transactionId, paymentId);
 
     [DllImport("IDCLib2", EntryPoint="_InitIDCLib", ExactSpelling=true, CharSet=CharSet.Unicode, CallingConvention=CallingConvention.StdCall)]
@@ -45,6 +48,8 @@ internal sealed class NativeApi : INativeApi
     private static extern int EndNative();
     [DllImport("IDCLib2", EntryPoint="_OpenShop", ExactSpelling=true, CharSet=CharSet.Unicode, CallingConvention=CallingConvention.StdCall)]
     private static extern int OpenNative(string tx, string extra, int level, [MarshalAs(UnmanagedType.I1)] bool sandbox, string article);
+    [DllImport("IDCLib2", EntryPoint="_OpenShopWithLanguage", ExactSpelling=true, CharSet=CharSet.Unicode, CallingConvention=CallingConvention.StdCall)]
+    private static extern int OpenLanguageNative(string tx, string extra, int level, [MarshalAs(UnmanagedType.I1)] bool sandbox, string article, string language);
     [DllImport("IDCLib2", EntryPoint="_ClosePurchase", ExactSpelling=true, CharSet=CharSet.Unicode, CallingConvention=CallingConvention.StdCall)]
     private static extern int CloseNative(string tx, string paymentId);
 }
