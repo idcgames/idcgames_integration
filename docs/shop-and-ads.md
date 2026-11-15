@@ -12,6 +12,15 @@ idc.OpenShopWithLanguage(Guid.NewGuid().ToString(), "es", sandbox: true);
 
 `article` vacío abre la tienda; para abrir un artículo usar el identificador configurado con IDC. `extra` y `userLevel` son metadatos del cliente, no autorización. Los parámetros nativos tienen límites; el wrapper rechaza cadenas demasiado largas, comillas, barras invertidas y controles porque la DLL histórica construye JSON en buffers fijos.
 
+### Comprobar el idioma con el ejemplo C#
+
+1. Habilita el sandbox y el idioma que quieras probar en la tienda de un juego de pruebas. Elige un idioma distinto del de la cuenta del jugador.
+2. Abre el Launcher **7.1.35 o posterior** e inicia sesión. Configura `IDC_GAME_ID` y `IDC_GAME_CLIENT_KEY` para ese juego, y ejecuta `dotnet run --project examples/LauncherDemo`.
+3. Espera a que el ejemplo reciba `UserData`. Escribe `shop-lang en` si el inglés está habilitado y tu cuenta usa otro idioma. El ejemplo llama a `_OpenShopWithLanguage` en sandbox.
+4. Comprueba en la ventana que el **catálogo** aparece en el idioma indicado. Cierra la tienda sin comprar y escribe `quit`. Con `shop` puedes comparar la apertura en sandbox con el idioma predeterminado de la cuenta.
+
+Si el Panel responde `sandbox_disabled`, comprueba que el sandbox del juego esté habilitado antes de repetir la prueba.
+
 Notificación de compra:
 
 ```json
